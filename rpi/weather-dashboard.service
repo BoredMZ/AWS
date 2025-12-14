@@ -1,0 +1,17 @@
+[Unit]
+Description=Philippine Weather Station Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/weather-dashboard
+ExecStart=/usr/bin/python3 %h/weather-dashboard/rpi/gui_app.py
+Restart=always
+RestartSec=10
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=%h/.Xauthority"
+
+[Install]
+WantedBy=default.target

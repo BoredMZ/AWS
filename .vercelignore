@@ -1,0 +1,17 @@
+# Vercel ignore file
+# Don't deploy these files/directories
+
+.git
+.gitignore
+.env.example
+.env.local
+.env.*.local
+.next
+node_modules
+rpi/
+scripts/
+.credentials/
+README.md
+OPERATING_GUIDE.md
+ESP32_WEATHER_STATION_TEMPLATE.ino
+*.md
