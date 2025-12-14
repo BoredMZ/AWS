@@ -10,4 +10,4 @@ node_modules/
 !.vscode/launch.json
 !.vscode/settings.json
 dist/
-build/
+build/.credentials/
