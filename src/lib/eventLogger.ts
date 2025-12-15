@@ -1,4 +1,4 @@
-import { getDatabase, ref, push, set, query, orderByChild, limitToLast, onValue } from 'firebase/database';
+import { getDatabase, ref, push, set, query, orderByChild, limitToLast, onValue, Database } from 'firebase/database';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirebaseConfig } from './firebaseConfig';
 
@@ -27,14 +27,24 @@ export interface EventData {
 }
 
 /**
- * Initialize Firebase connection
+ * Get Firebase database instance
  */
-function initializeFirebase() {
-  const apps = getApps();
-  if (apps.length === 0) {
-    initializeApp(getFirebaseConfig());
+function getFirebaseDatabase(): Database {
+  try {
+    const firebaseConfig = getFirebaseConfig();
+    const apps = getApps();
+    const app = apps.length > 0 ? apps[0] : initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    
+    if (!database) {
+      throw new Error('Failed to initialize Firebase Database');
+    }
+    
+    return database;
+  } catch (error) {
+    console.error('❌ Firebase initialization error:', error);
+    throw error;
   }
-  return getDatabase();
 }
 
 /**
@@ -50,7 +60,7 @@ export async function logEventToFirebase(
   eventData: EventData
 ): Promise<string> {
   try {
-    const database = initializeFirebase();
+    const database = getFirebaseDatabase();
     const eventsRef = ref(database, `events/${stationName.toLowerCase().replace(/\s+/g, '_')}`);
     
     const timestamp = Date.now();
@@ -82,11 +92,11 @@ export async function logEventToFirebase(
     await set(newEventRef, event);
 
     // Log to console
-    console.log(`✅ Event logged to Firebase: ${stationName}`, event);
+    console.log(`✅ Event logged: ${eventType} - ${stationName}`);
 
     return newEventRef.key || 'unknown';
   } catch (error) {
-    console.error('❌ Failed to log event to Firebase:', error);
+    console.error('❌ Failed to log event:', error);
     throw error;
   }
 }
@@ -103,7 +113,7 @@ export function getRecentEvents(
   callback: (events: LogEvent[]) => void
 ): () => void {
   try {
-    const database = initializeFirebase();
+    const database = getFirebaseDatabase();
     const stationKey = stationName.toLowerCase().replace(/\s+/g, '_');
     const eventsRef = ref(database, `events/${stationKey}`);
     const eventsQuery = query(eventsRef, orderByChild('timestamp'), limitToLast(limit));
@@ -124,12 +134,15 @@ export function getRecentEvents(
       },
       (error) => {
         console.error('❌ Error retrieving events:', error);
+        // Still call callback with empty array on error
+        callback([]);
       }
     );
 
     return unsubscribe;
   } catch (error) {
     console.error('❌ Failed to get events:', error);
+    // Return no-op function on error
     return () => {};
   }
 }
@@ -140,7 +153,7 @@ export function getRecentEvents(
  */
 export function getAllEvents(callback: (events: LogEvent[]) => void): () => void {
   try {
-    const database = initializeFirebase();
+    const database = getFirebaseDatabase();
     const allEventsRef = ref(database, 'events');
 
     const unsubscribe = onValue(
@@ -163,12 +176,15 @@ export function getAllEvents(callback: (events: LogEvent[]) => void): () => void
       },
       (error) => {
         console.error('❌ Error retrieving all events:', error);
+        // Still call callback with empty array on error
+        callback([]);
       }
     );
 
     return unsubscribe;
   } catch (error) {
     console.error('❌ Failed to get all events:', error);
+    // Return no-op function on error
     return () => {};
   }
 }
@@ -180,7 +196,7 @@ export function getAllEvents(callback: (events: LogEvent[]) => void): () => void
  */
 export async function deleteEvent(stationName: string, eventId: string): Promise<void> {
   try {
-    const database = initializeFirebase();
+    const database = getFirebaseDatabase();
     const stationKey = stationName.toLowerCase().replace(/\s+/g, '_');
     const eventRef = ref(database, `events/${stationKey}/${eventId}`);
     await set(eventRef, null);
@@ -197,7 +213,7 @@ export async function deleteEvent(stationName: string, eventId: string): Promise
  */
 export async function clearStationEvents(stationName: string): Promise<void> {
   try {
-    const database = initializeFirebase();
+    const database = getFirebaseDatabase();
     const stationKey = stationName.toLowerCase().replace(/\s+/g, '_');
     const eventsRef = ref(database, `events/${stationKey}`);
     await set(eventsRef, null);
