@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { WeatherStationData } from '@/types/weather';
 import { getWeatherAlert, getWeatherIcon } from '@/lib/weatherUtils';
+import EventLogger from './EventLogger';
+import EventDisplay from './EventDisplay';
 
 interface WeatherCardProps {
   data: WeatherStationData;
@@ -10,6 +12,7 @@ interface WeatherCardProps {
 }
 
 export default function WeatherCard({ data, language = 'en' }: WeatherCardProps) {
+  const [showEvents, setShowEvents] = useState(false);
   // Debug extra sensors
   React.useEffect(() => {
     if (data.extraSensors && Object.keys(data.extraSensors).length > 0) {
@@ -210,6 +213,23 @@ export default function WeatherCard({ data, language = 'en' }: WeatherCardProps)
               </div>
             </div>
           )}
+
+          {/* Event Logger & Display Toggle */}
+          <div className="mt-4 pt-3 border-t border-cyan-400/20 space-y-3">
+            <button
+              onClick={() => setShowEvents(!showEvents)}
+              className="w-full px-4 py-2 text-sm font-medium bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+            >
+              {showEvents ? '▲ Hide Events' : '▼ Show Events & Logging'}
+            </button>
+
+            {showEvents && (
+              <div className="space-y-3">
+                <EventLogger stationName={data.stationName} />
+                <EventDisplay stationName={data.stationName} limit={8} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
