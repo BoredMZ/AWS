@@ -388,16 +388,12 @@ npm run dev
 
 ---
 
-### Method 2: Raspberry Pi GUI Application ⭐ **ENHANCED**
+### Method 2: Raspberry Pi GUI Application
 
-**For desktop display on Raspberry Pi or Ubuntu:**
+**For desktop display on Raspberry Pi:**
 
 ```bash
-# Raspberry Pi
 python3 rpi/gui_app.py
-
-# Ubuntu (testing)
-python3 rpi/gui_app_ubuntu.py
 ```
 
 **Pros:**
@@ -409,7 +405,7 @@ python3 rpi/gui_app_ubuntu.py
 
 **Cons:**
 - PyQt5 required
-- Higher resource usage
+- Higher resource usage (Raspberry Pi 4 recommended)
 
 **Output:**
 ```
