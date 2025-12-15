@@ -47,7 +47,85 @@ interface ArduinoCodeOptions {
   stationLocation?: string;
   stationName?: string;
   sensors?: string[];
+  rainfallComponent?: string;
+  windSpeedComponent?: string;
 }
+
+export const COMPONENT_ALTERNATIVES = {
+  RAINFALL: {
+    default: 'TipBucket_RainGauge',
+    alternatives: [
+      { 
+        id: 'TipBucket_RainGauge', 
+        name: 'Tip Bucket Rain Gauge (Default)', 
+        pins: 'GPIO_35',
+        calibration: '0.254',
+        description: 'Standard tipping bucket with magnetic reed switch'
+      },
+      { 
+        id: 'reedSwitch_RainGauge', 
+        name: 'Reed Switch Rain Gauge', 
+        pins: 'GPIO_35',
+        calibration: '0.2',
+        description: 'Direct reed switch with magnet-triggered bucket'
+      },
+      { 
+        id: 'capac_RainSensor', 
+        name: 'Capacitive Rain Sensor', 
+        pins: 'ADC0 (GPIO_36)',
+        calibration: '0.5',
+        description: 'Analog capacitive sensor for gradual rainfall detection'
+      },
+      { 
+        id: 'optical_RainGauge', 
+        name: 'Optical Rain Gauge', 
+        pins: 'GPIO_32',
+        calibration: '0.254',
+        description: 'Optical sensor detects bucket tip motion'
+      },
+    ]
+  },
+  WIND_SPEED: {
+    default: 'Anemometer_3Cup',
+    alternatives: [
+      { 
+        id: 'Anemometer_3Cup', 
+        name: '3-Cup Anemometer (Default)', 
+        pins: 'GPIO_34',
+        calibration: '2.4',
+        description: 'Traditional 3-cup anemometer with reed switch'
+      },
+      { 
+        id: 'reedSwitch_Anemometer', 
+        name: 'Reed Switch Anemometer', 
+        pins: 'GPIO_34',
+        calibration: '2.0',
+        description: 'Magnet on cup rotor triggers reed switch for each rotation'
+      },
+      { 
+        id: 'hotwire_Anemometer', 
+        name: 'Hot Wire Anemometer', 
+        pins: 'ADC1 (GPIO_39)',
+        calibration: '1.0',
+        description: 'Analog hot wire sensor for fine wind speed resolution'
+      },
+      { 
+        id: 'sonic_Anemometer', 
+        name: 'Sonic Anemometer', 
+        pins: 'RX/TX (GPIO_16/17)',
+        calibration: 'Serial',
+        description: 'Ultrasonic sensor with serial output (higher accuracy)'
+      },
+      { 
+        id: 'propeller_Anemometer', 
+        name: 'Propeller Anemometer', 
+        pins: 'GPIO_32',
+        calibration: '1.8',
+        description: 'Propeller rotor with reed switch counting'
+      },
+    ]
+  }
+};
 
 export const STATION_CONFIG: Record<string, { name: string; municipality: string; province: string; sensors: string[] }> = {
   manila: {
@@ -100,6 +178,13 @@ export const generateArduinoCode = (options?: ArduinoCodeOptions): string => {
   const province = config?.province || 'Metro Manila';
   const selectedSensors = options?.sensors || config?.sensors || ['atmosphericPressure', 'solarRadiation'];
   
+  // Component selection
+  const rainfallComponent = options?.rainfallComponent || COMPONENT_ALTERNATIVES.RAINFALL.default;
+  const windSpeedComponent = options?.windSpeedComponent || COMPONENT_ALTERNATIVES.WIND_SPEED.default;
+  
+  const rainfallConfig = COMPONENT_ALTERNATIVES.RAINFALL.alternatives.find(c => c.id === rainfallComponent) || COMPONENT_ALTERNATIVES.RAINFALL.alternatives[0];
+  const windSpeedConfig = COMPONENT_ALTERNATIVES.WIND_SPEED.alternatives.find(c => c.id === windSpeedComponent) || COMPONENT_ALTERNATIVES.WIND_SPEED.alternatives[0];
+  
   // Generate sensor defines
   const sensorDefines = selectedSensors
     .map(sensor => {
@@ -125,6 +210,10 @@ export const generateArduinoCode = (options?: ArduinoCodeOptions): string => {
  * 
  * Generated: ${credentials.created_at}
  * Firebase Project: ${credentials.firebase_project_id}
+ * 
+ * Station: ${stationName} (${municipality}, ${province})
+ * Rainfall Component: ${rainfallConfig.name}
+ * Wind Speed Component: ${windSpeedConfig.name}
  * 
  * Required Libraries:
  * - Firebase Realtime Database (firebase-esp32)
@@ -164,6 +253,24 @@ const char* PROVINCE = "${province}";
 // Sensor Type Configuration (PRE-CONFIGURED FOR YOUR STATION)
 ${sensorDefines || '// No extra sensors configured for this station'}
 
+// Component Configuration
+#define RAINFALL_COMPONENT "${rainfallComponent}"
+#define WIND_SPEED_COMPONENT "${windSpeedComponent}"
+
+// ============================================
+// COMPONENT PIN & CALIBRATION CONFIGURATION
+// ============================================
+
+// Rainfall Sensor Configuration
+#define RAINFALL_PIN ${rainfallConfig.pins}
+#define RAINFALL_MM_PER_TIP ${rainfallConfig.calibration}  // Component: ${rainfallConfig.name}
+// ${rainfallConfig.description}
+
+// Wind Speed Sensor Configuration
+#define WIND_SPEED_PIN ${windSpeedConfig.pins}
+#define WIND_SPEED_CALIBRATION ${windSpeedConfig.calibration}  // Component: ${windSpeedConfig.name}
+// ${windSpeedConfig.description}
+
 #define UPDATE_INTERVAL 30000   // Upload data every 30 seconds
 
 // ============================================
@@ -197,8 +304,12 @@ void loop() {
     // Read sensors (implement your actual sensor code)
     float temperature = 25.0 + (random(0, 50) / 10.0);
     float humidity = 60.0 + (random(0, 200) / 10.0);
-    float rainfall = 0.0;
-    float windSpeed = 5.0 + (random(0, 100) / 10.0);
+    
+    // Read rainfall sensor based on selected component
+    float rainfall = readRainfallSensor();
+    
+    // Read wind speed sensor based on selected component
+    float windSpeed = readWindSpeedSensor();
     String windDirection = "N";
     
     // Prepare Firebase JSON
@@ -285,6 +396,37 @@ String getTimestamp() {
 }
 
 // ============================================
+// SENSOR READING FUNCTIONS
+// ============================================
+
+float readRainfallSensor() {
+  // Implement rainfall sensor reading based on component type
+  // #if defined(RAINFALL_COMPONENT) && RAINFALL_COMPONENT == "reedSwitch_RainGauge"
+  //   // Reed switch implementation
+  //   return readReedSwitchRainfallTips() * RAINFALL_MM_PER_TIP;
+  // #else
+  //   // Default tip bucket or capacitive
+  //   return readRainfallTips() * RAINFALL_MM_PER_TIP;
+  // #endif
+  return 0.0;  // Placeholder
+}
+
+float readWindSpeedSensor() {
+  // Implement wind speed sensor reading based on component type
+  // #if defined(WIND_SPEED_COMPONENT) && WIND_SPEED_COMPONENT == "reedSwitch_Anemometer"
+  //   // Reed switch anemometer implementation
+  //   return getAnemometerRPM() * WIND_SPEED_CALIBRATION;
+  // #elif defined(WIND_SPEED_COMPONENT) && WIND_SPEED_COMPONENT == "hotwire_Anemometer"
+  //   // Hot wire sensor analog reading
+  //   return getAnalogWindSpeed() * WIND_SPEED_CALIBRATION;
+  // #else
+  //   // Default 3-cup anemometer
+  //   return getAnemometerRPM() * WIND_SPEED_CALIBRATION;
+  // #endif
+  return 5.0;  // Placeholder
+}
+
+// ============================================
 // Station Configurations:
 // Manila: HAS_ATMOSPHERIC_PRESSURE, HAS_SOLAR_RADIATION
 // Laguna: HAS_SOIL_MOISTURE
@@ -292,6 +434,21 @@ String getTimestamp() {
 // Cavite: (no extra sensors)
 // Bulacan: HAS_SOIL_MOISTURE, HAS_ATMOSPHERIC_PRESSURE
 // Batangas: HAS_UV_INDEX
+// ============================================
+
+// ============================================
+// RAINFALL COMPONENT OPTIONS:
+// - TipBucket_RainGauge (0.254mm per tip)
+// - reedSwitch_RainGauge (0.2mm per tip)
+// - capac_RainSensor (0.5mm calibration)
+// - optical_RainGauge (0.254mm per tip)
+//
+// WIND SPEED COMPONENT OPTIONS:
+// - Anemometer_3Cup (2.4 km/h per Hz)
+// - reedSwitch_Anemometer (2.0 km/h per Hz)
+// - hotwire_Anemometer (analog, 1.0 scaling)
+// - sonic_Anemometer (serial, high accuracy)
+// - propeller_Anemometer (1.8 km/h per Hz)
 // ============================================
 `;
 };

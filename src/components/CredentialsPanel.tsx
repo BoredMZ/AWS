@@ -1,6 +1,6 @@
 'use client';
 
-import { downloadCredentials, downloadArduinoCode, STATION_CONFIG } from '@/lib/credentialsGenerator';
+import { downloadCredentials, downloadArduinoCode, STATION_CONFIG, COMPONENT_ALTERNATIVES } from '@/lib/credentialsGenerator';
 import { useState } from 'react';
 
 interface CredentialsPanelProps {
@@ -21,6 +21,9 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
   const [isOpen, setIsOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<string>('manila');
   const [showCustomization, setShowCustomization] = useState(false);
+  const [showComponentCustomization, setShowComponentCustomization] = useState(false);
+  const [selectedRainfallComponent, setSelectedRainfallComponent] = useState<string>(COMPONENT_ALTERNATIVES.RAINFALL.default);
+  const [selectedWindSpeedComponent, setSelectedWindSpeedComponent] = useState<string>(COMPONENT_ALTERNATIVES.WIND_SPEED.default);
 
   const stationConfig = STATION_CONFIG[selectedStation] || STATION_CONFIG['manila'];
   const [selectedSensors, setSelectedSensors] = useState<string[]>(stationConfig.sensors || []);
@@ -40,9 +43,13 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
       step4: '4. Modify with your WiFi credentials',
       selectStation: 'Select Station:',
       customize: 'Customize Sensors',
+      customizeComponents: '🔧 Customize Components',
       selectSensors: 'Select sensors for this station:',
+      rainfallComponent: 'Rainfall Sensor Component:',
+      windSpeedComponent: 'Wind Speed Sensor Component:',
       download: 'Download Code',
       close: 'Close',
+      back: 'Back',
     },
     tl: {
       title: 'ESP32 Mga Credentials',
@@ -58,9 +65,13 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
       step4: '4. Baguhin gamit ang iyong WiFi credentials',
       selectStation: 'Piliin ang Station:',
       customize: 'I-customize ang Mga Sensor',
+      customizeComponents: '🔧 I-customize ang Mga Component',
       selectSensors: 'Piliin ang mga sensor para sa stasyong ito:',
+      rainfallComponent: 'Rainfall Sensor Component:',
+      windSpeedComponent: 'Wind Speed Sensor Component:',
       download: 'I-download ang Code',
       close: 'Isara',
+      back: 'Bumalik',
     },
   };
 
@@ -126,7 +137,6 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
               </button>
             ) : (
               <div className="bg-gray-50 p-4 rounded-lg border-2 border-green-200">
-                {/* Station Selector */}
                 <label className="block text-sm font-bold text-gray-700 mb-2">{t.selectStation}</label>
                 <select
                   value={selectedStation}
@@ -169,8 +179,14 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      downloadArduinoCode({ stationLocation: selectedStation, sensors: selectedSensors });
+                      downloadArduinoCode({ 
+                        stationLocation: selectedStation, 
+                        sensors: selectedSensors,
+                        rainfallComponent: selectedRainfallComponent,
+                        windSpeedComponent: selectedWindSpeedComponent,
+                      });
                       setShowCustomization(false);
+                      setShowComponentCustomization(false);
                       setIsOpen(false);
                     }}
                     className="flex-1 bg-green-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-green-600 transition-all"
@@ -178,12 +194,84 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
                     {t.download}
                   </button>
                   <button
-                    onClick={() => setShowCustomization(false)}
+                    onClick={() => {
+                      setShowComponentCustomization(false);
+                      if (!showComponentCustomization) {
+                        setShowCustomization(false);
+                      }
+                    }}
                     className="flex-1 bg-gray-400 text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-500 transition-all"
                   >
-                    Back
+                    {t.back}
                   </button>
                 </div>
+
+                {/* Component Customization Button */}
+                {!showComponentCustomization && (
+                  <button
+                    onClick={() => setShowComponentCustomization(true)}
+                    className="w-full mt-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2 px-3 rounded-lg hover:shadow-lg transition-all text-sm"
+                  >
+                    {t.customizeComponents}
+                  </button>
+                )}
+
+                {/* Component Customization Section */}
+                {showComponentCustomization && (
+                  <div className="mt-4 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                    <h4 className="font-bold text-gray-800 mb-3 text-sm">⚙️ {t.customizeComponents}</h4>
+                    
+                    {/* Rainfall Component */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-bold text-gray-700 mb-2">{t.rainfallComponent}</label>
+                      <select
+                        value={selectedRainfallComponent}
+                        onChange={(e) => setSelectedRainfallComponent(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg text-gray-800 text-sm"
+                      >
+                        {COMPONENT_ALTERNATIVES.RAINFALL.alternatives.map(comp => (
+                          <option key={comp.id} value={comp.id}>
+                            {comp.name} - PIN: {comp.pins} (Cal: {comp.calibration})
+                          </option>
+                        ))}
+                      </select>
+                      {selectedRainfallComponent && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          💡 {COMPONENT_ALTERNATIVES.RAINFALL.alternatives.find(c => c.id === selectedRainfallComponent)?.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Wind Speed Component */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">{t.windSpeedComponent}</label>
+                      <select
+                        value={selectedWindSpeedComponent}
+                        onChange={(e) => setSelectedWindSpeedComponent(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg text-gray-800 text-sm"
+                      >
+                        {COMPONENT_ALTERNATIVES.WIND_SPEED.alternatives.map(comp => (
+                          <option key={comp.id} value={comp.id}>
+                            {comp.name} - PIN: {comp.pins} (Cal: {comp.calibration})
+                          </option>
+                        ))}
+                      </select>
+                      {selectedWindSpeedComponent && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          💡 {COMPONENT_ALTERNATIVES.WIND_SPEED.alternatives.find(c => c.id === selectedWindSpeedComponent)?.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Back Button */}
+                    <button
+                      onClick={() => setShowComponentCustomization(false)}
+                      className="w-full mt-3 bg-gray-400 text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-500 transition-all text-sm"
+                    >
+                      {t.back}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
