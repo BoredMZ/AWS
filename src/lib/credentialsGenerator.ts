@@ -43,12 +43,33 @@ export const downloadCredentials = (): void => {
   URL.revokeObjectURL(url);
 };
 
+export type AudienceType = 'students' | 'farmers' | 'government';
+
+export const AUDIENCE_TYPES: Record<AudienceType, { label: string; icon: string; description: string }> = {
+  students: {
+    label: 'Students',
+    icon: '👨‍🎓',
+    description: 'Educational institutions, research, science projects'
+  },
+  farmers: {
+    label: 'Farmers',
+    icon: '👨‍🌾',
+    description: 'Agricultural data, crop planning, soil monitoring'
+  },
+  government: {
+    label: 'Government',
+    icon: '🏛️',
+    description: 'Policy decisions, disaster management, infrastructure'
+  }
+};
+
 interface ArduinoCodeOptions {
   stationLocation?: string;
   stationName?: string;
   sensors?: string[];
   rainfallComponent?: string;
   windSpeedComponent?: string;
+  audienceTarget?: AudienceType;
 }
 
 export const COMPONENT_ALTERNATIVES = {
@@ -177,6 +198,8 @@ export const generateArduinoCode = (options?: ArduinoCodeOptions): string => {
   const municipality = config?.municipality || 'Manila';
   const province = config?.province || 'Metro Manila';
   const selectedSensors = options?.sensors || config?.sensors || ['atmosphericPressure', 'solarRadiation'];
+  const audienceTarget = options?.audienceTarget || 'students';
+  const audienceInfo = AUDIENCE_TYPES[audienceTarget];
   
   // Component selection
   const rainfallComponent = options?.rainfallComponent || COMPONENT_ALTERNATIVES.RAINFALL.default;
@@ -212,6 +235,7 @@ export const generateArduinoCode = (options?: ArduinoCodeOptions): string => {
  * Firebase Project: ${credentials.firebase_project_id}
  * 
  * Station: ${stationName} (${municipality}, ${province})
+ * Target Audience: ${audienceInfo.icon} ${audienceInfo.label} - ${audienceInfo.description}
  * Rainfall Component: ${rainfallConfig.name}
  * Wind Speed Component: ${windSpeedConfig.name}
  * 
@@ -249,6 +273,7 @@ const char* STATION_LOCATION = "${location}";
 const char* STATION_NAME = "${stationName}";
 const char* MUNICIPALITY = "${municipality}";
 const char* PROVINCE = "${province}";
+const char* AUDIENCE_TARGET = "${audienceTarget}";  // ${audienceInfo.icon} ${audienceInfo.label}
 
 // Sensor Type Configuration (PRE-CONFIGURED FOR YOUR STATION)
 ${sensorDefines || '// No extra sensors configured for this station'}

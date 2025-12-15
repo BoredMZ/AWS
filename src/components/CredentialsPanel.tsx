@@ -1,6 +1,6 @@
 'use client';
 
-import { downloadCredentials, downloadArduinoCode, STATION_CONFIG, COMPONENT_ALTERNATIVES } from '@/lib/credentialsGenerator';
+import { downloadCredentials, downloadArduinoCode, STATION_CONFIG, COMPONENT_ALTERNATIVES, AUDIENCE_TYPES, type AudienceType } from '@/lib/credentialsGenerator';
 import { useState } from 'react';
 
 interface CredentialsPanelProps {
@@ -24,6 +24,7 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
   const [showComponentCustomization, setShowComponentCustomization] = useState(false);
   const [selectedRainfallComponent, setSelectedRainfallComponent] = useState<string>(COMPONENT_ALTERNATIVES.RAINFALL.default);
   const [selectedWindSpeedComponent, setSelectedWindSpeedComponent] = useState<string>(COMPONENT_ALTERNATIVES.WIND_SPEED.default);
+  const [selectedAudience, setSelectedAudience] = useState<AudienceType>('students');
 
   const stationConfig = STATION_CONFIG[selectedStation] || STATION_CONFIG['manila'];
   const [selectedSensors, setSelectedSensors] = useState<string[]>(stationConfig.sensors || []);
@@ -50,6 +51,8 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
       download: 'Download Code',
       close: 'Close',
       back: 'Back',
+      audienceTarget: 'Target Audience:',
+      audienceHelp: 'This determines the news and data insights shown for this station',
     },
     tl: {
       title: 'ESP32 Mga Credentials',
@@ -72,6 +75,8 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
       download: 'I-download ang Code',
       close: 'Isara',
       back: 'Bumalik',
+      audienceTarget: 'Target Audience:',
+      audienceHelp: 'Ito ay tumutukoy sa balita at insights na ipapakita para sa istasyong ito',
     },
   };
 
@@ -153,7 +158,28 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
                   ))}
                 </select>
 
-                {/* Sensor Selector */}
+                {/* Target Audience Selector */}
+                <label className="block text-sm font-bold text-gray-700 mb-2">{t.audienceTarget}</label>
+                <div className="space-y-2 mb-4">
+                  {(Object.entries(AUDIENCE_TYPES) as [AudienceType, typeof AUDIENCE_TYPES['students']][]).map(([audienceKey, audienceInfo]) => (
+                    <label key={audienceKey} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-100 transition">
+                      <input
+                        type="radio"
+                        name="audience"
+                        value={audienceKey}
+                        checked={selectedAudience === audienceKey}
+                        onChange={(e) => setSelectedAudience(e.target.value as AudienceType)}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-gray-700">
+                        <span className="text-lg mr-1">{audienceInfo.icon}</span>
+                        <span className="font-semibold">{audienceInfo.label}</span>
+                        <span className="text-xs text-gray-500 ml-2">- {audienceInfo.description}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-600 mb-4 bg-blue-50 p-2 rounded">{t.audienceHelp}</p>
                 <label className="block text-sm font-bold text-gray-700 mb-2">{t.selectSensors}</label>
                 <div className="space-y-2 mb-4">
                   {Object.entries(SENSOR_LABELS).map(([sensor, label]) => (
@@ -184,6 +210,7 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
                         sensors: selectedSensors,
                         rainfallComponent: selectedRainfallComponent,
                         windSpeedComponent: selectedWindSpeedComponent,
+                        audienceTarget: selectedAudience,
                       });
                       setShowCustomization(false);
                       setShowComponentCustomization(false);
