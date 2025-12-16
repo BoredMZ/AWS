@@ -69,6 +69,7 @@ interface ArduinoCodeOptions {
   sensors?: string[];
   rainfallComponent?: string;
   windSpeedComponent?: string;
+  waterLevelComponent?: string;
   audienceTarget?: AudienceType;
 }
 
@@ -145,6 +146,46 @@ export const COMPONENT_ALTERNATIVES = {
         description: 'Propeller rotor with reed switch counting'
       },
     ]
+  },
+  WATER_LEVEL: {
+    default: 'ultrasonic_WaterLevel',
+    alternatives: [
+      { 
+        id: 'ultrasonic_WaterLevel', 
+        name: 'Ultrasonic Water Level Sensor (Default)', 
+        pins: 'GPIO_22 (Trig), GPIO_23 (Echo)',
+        calibration: '0.0173',
+        description: 'Non-contact ultrasonic sensor measures distance to water surface'
+      },
+      { 
+        id: 'capacitive_WaterLevel', 
+        name: 'Capacitive Water Level Sensor', 
+        pins: 'ADC2 (GPIO_26)',
+        calibration: '0.02',
+        description: 'Analog capacitive sensor detects water presence and level'
+      },
+      { 
+        id: 'floatSwitch_WaterLevel', 
+        name: 'Float Switch Water Level', 
+        pins: 'GPIO_25',
+        calibration: '0.1',
+        description: 'Simple binary float switch for high/low water level alarm'
+      },
+      { 
+        id: 'resistive_WaterLevel', 
+        name: 'Resistive Water Level Sensor', 
+        pins: 'ADC3 (GPIO_27)',
+        calibration: '0.01',
+        description: 'Resistive analog sensor with conductive strips'
+      },
+      { 
+        id: 'pressure_WaterLevel', 
+        name: 'Pressure-based Water Level', 
+        pins: 'I2C (GPIO_21/22)',
+        calibration: '0.002',
+        description: 'Barometric pressure sensor at tank bottom calculates water height'
+      },
+    ]
   }
 };
 
@@ -204,9 +245,11 @@ export const generateArduinoCode = (options?: ArduinoCodeOptions): string => {
   // Component selection
   const rainfallComponent = options?.rainfallComponent || COMPONENT_ALTERNATIVES.RAINFALL.default;
   const windSpeedComponent = options?.windSpeedComponent || COMPONENT_ALTERNATIVES.WIND_SPEED.default;
+  const waterLevelComponent = options?.waterLevelComponent || COMPONENT_ALTERNATIVES.WATER_LEVEL.default;
   
   const rainfallConfig = COMPONENT_ALTERNATIVES.RAINFALL.alternatives.find(c => c.id === rainfallComponent) || COMPONENT_ALTERNATIVES.RAINFALL.alternatives[0];
   const windSpeedConfig = COMPONENT_ALTERNATIVES.WIND_SPEED.alternatives.find(c => c.id === windSpeedComponent) || COMPONENT_ALTERNATIVES.WIND_SPEED.alternatives[0];
+  const waterLevelConfig = COMPONENT_ALTERNATIVES.WATER_LEVEL.alternatives.find(c => c.id === waterLevelComponent) || COMPONENT_ALTERNATIVES.WATER_LEVEL.alternatives[0];
   
   // Generate sensor defines
   const sensorDefines = selectedSensors
@@ -281,6 +324,7 @@ ${sensorDefines || '// No extra sensors configured for this station'}
 // Component Configuration
 #define RAINFALL_COMPONENT "${rainfallComponent}"
 #define WIND_SPEED_COMPONENT "${windSpeedComponent}"
+#define WATER_LEVEL_COMPONENT "${waterLevelComponent}"
 
 // ============================================
 // COMPONENT PIN & CALIBRATION CONFIGURATION
@@ -474,6 +518,13 @@ float readWindSpeedSensor() {
 // - hotwire_Anemometer (analog, 1.0 scaling)
 // - sonic_Anemometer (serial, high accuracy)
 // - propeller_Anemometer (1.8 km/h per Hz)
+//
+// WATER LEVEL COMPONENT OPTIONS (OPTIONAL):
+// - ultrasonic_WaterLevel (GPIO 22/23, 0.0173 cm/pulse)
+// - capacitive_WaterLevel (ADC2/GPIO 26, 0.02)
+// - floatSwitch_WaterLevel (GPIO 25, 0.1)
+// - resistive_WaterLevel (ADC3/GPIO 27, 0.01)
+// - pressure_WaterLevel (I2C/GPIO 21-22, 0.002 m/hPa)
 // ============================================
 `;
 };

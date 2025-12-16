@@ -49,6 +49,12 @@ const char* PROVINCE = "Metro Manila";
 #define WIND_SPEED_PIN 12      // Anemometer (GPIO 12)
 #define WIND_DIRECTION_PIN 34  // Wind vane (analog pin)
 
+// Water Level Sensor Pins (if using water level sensor)
+// #define WATER_LEVEL_TRIG_PIN 22    // Ultrasonic trigger (GPIO 22)
+// #define WATER_LEVEL_ECHO_PIN 23    // Ultrasonic echo (GPIO 23)
+// #define WATER_LEVEL_ANALOG_PIN 26  // Capacitive analog (GPIO 26)
+// #define WATER_LEVEL_DIGITAL_PIN 25 // Float switch (GPIO 25)
+
 // Sensor Type Configuration
 // Define which extra sensors this station has
 // Uncomment the ones YOUR station uses
@@ -57,6 +63,7 @@ const char* PROVINCE = "Metro Manila";
 // #define HAS_SOIL_MOISTURE       // Laguna: YES
 // #define HAS_UV_INDEX            // Pampanga: YES
 // #define HAS_VISIBILITY          // Pampanga: YES
+// #define HAS_WATER_LEVEL         // Optional: Water level monitoring
 
 // Update Interval (milliseconds)
 #define UPDATE_INTERVAL 30000   // Upload data every 30 seconds
@@ -86,6 +93,11 @@ float solarRadiation = 0;
 // For soil moisture (if available)
 #ifdef HAS_SOIL_MOISTURE
 float soilMoisture = 0;
+#endif
+
+// For water level (if available)
+#ifdef HAS_WATER_LEVEL
+float waterLevel = 0;  // cm or meters depending on sensor
 #endif
 
 // For UV index (if available)
@@ -179,6 +191,10 @@ void loop() {
     json.set("extraSensors/visibility", visibility);
     #endif
     
+    #ifdef HAS_WATER_LEVEL
+    json.set("extraSensors/waterLevel", waterLevel);
+    #endif
+    
     // Add sensorTypes array
     String sensorTypes = "[\"temperature\",\"humidity\",\"rainfall\",\"windVane\",\"windSpeed\"";
     #ifdef HAS_ATMOSPHERIC_PRESSURE
@@ -195,6 +211,9 @@ void loop() {
     #endif
     #ifdef HAS_VISIBILITY
     sensorTypes += ",\"visibility\"";
+    #endif
+    #ifdef HAS_WATER_LEVEL
+    sensorTypes += ",\"waterLevel\"";
     #endif
     sensorTypes += "]";
     
@@ -262,6 +281,10 @@ void readSensors() {
   
   #ifdef HAS_VISIBILITY
   visibility = readVisibility();                    // meters
+  #endif
+  
+  #ifdef HAS_WATER_LEVEL
+  waterLevel = readWaterLevel();                    // cm or meters
   #endif
 }
 
@@ -349,12 +372,36 @@ float readUVIndex() {
 }
 #endif
 
-#ifdef HAS_VISIBILITY
-float readVisibility() {
-  // Example: Lidar sensor
-  // Complex calculation based on backscatter measurement
-  // For now, returning typical value
-  return 10000.0;  // meters
+#ifdef HAS_WATER_LEVEL
+float readWaterLevel() {
+  // Example implementations for different water level sensors:
+  
+  // Option 1: Ultrasonic Sensor (HC-SR04)
+  // digitalWrite(WATER_LEVEL_TRIG_PIN, LOW);
+  // delayMicroseconds(2);
+  // digitalWrite(WATER_LEVEL_TRIG_PIN, HIGH);
+  // delayMicroseconds(10);
+  // digitalWrite(WATER_LEVEL_TRIG_PIN, LOW);
+  // long duration = pulseIn(WATER_LEVEL_ECHO_PIN, HIGH);
+  // float distance = duration * 0.0173; // cm
+  // return distance;
+  
+  // Option 2: Capacitive Analog Sensor
+  // int analogValue = analogRead(WATER_LEVEL_ANALOG_PIN);
+  // float level = map(analogValue, 0, 4095, 0, 100) / 100.0;  // 0-100% to 0-1.0
+  // return level;
+  
+  // Option 3: Float Switch (Binary)
+  // bool waterPresent = digitalRead(WATER_LEVEL_DIGITAL_PIN);
+  // return waterPresent ? 100.0 : 0.0;  // 100cm if present, 0cm if not
+  
+  // Option 4: Pressure-based (at tank bottom)
+  // float pressureReading = readI2CPressure();
+  // float waterHeight = (pressureReading - 101.325) * 10.19;  // cm
+  // return waterHeight;
+  
+  // For now, returning placeholder value
+  return 0.0;  // cm or percentage depending on your sensor
 }
 #endif
 

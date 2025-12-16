@@ -25,6 +25,16 @@ ESP32 sensor components, Arduino code customization, and implementation examples
 | **Sonic** | GPIO_16/17 | Serial | Highest accuracy |
 | **Propeller** | GPIO_32 | 1.8 km/h/Hz | Lightweight |
 
+### Water Level Sensors (5 options)
+
+| Name | GPIO/Interface | Calibration | Best For |
+|------|-----------------|-------------|----------|
+| **Ultrasonic** (default) | GPIO 22/23 | 0.0173 cm/pulse | Non-contact, accurate distance |
+| **Capacitive** | ADC2 (GPIO 26) | 0.02 | Analog level detection |
+| **Float Switch** | GPIO 25 | 0.1 | Binary high/low detection |
+| **Resistive Strips** | ADC3 (GPIO 27) | 0.01 | Multi-point analog reading |
+| **Pressure-based** | I2C (GPIO 21/22) | 0.002 m/hPa | Barometric height calculation |
+
 ---
 
 ## Arduino Code Customization
@@ -149,6 +159,61 @@ float readWindSpeedSensor() {
   // Convert to km/h
   float wind_speed = rpm * WIND_SPEED_CALIBRATION;
   return wind_speed;
+}
+```
+
+### Example 5: Ultrasonic Water Level Sensor
+
+```cpp
+// GPIO 22: Trigger (output)
+// GPIO 23: Echo (input)
+#define WATER_LEVEL_TRIG_PIN 22
+#define WATER_LEVEL_ECHO_PIN 23
+
+float readWaterLevel() {
+  // Send pulse
+  digitalWrite(WATER_LEVEL_TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(WATER_LEVEL_TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(WATER_LEVEL_TRIG_PIN, LOW);
+  
+  // Measure echo time (microseconds)
+  long duration = pulseIn(WATER_LEVEL_ECHO_PIN, HIGH, 30000);
+  
+  // Convert to distance: distance = (duration / 2) * speed of sound
+  // Speed of sound: ~340 m/s = 0.034 cm/μs
+  float distance = (duration / 2.0) * 0.034;
+  
+  return distance;  // Return in cm
+}
+```
+
+### Example 6: Capacitive Water Level Sensor (Analog)
+
+```cpp
+#define WATER_LEVEL_ANALOG_PIN 26
+
+float readWaterLevel() {
+  int adcValue = analogRead(WATER_LEVEL_ANALOG_PIN);
+  
+  // ADC range: 0-4095, Calibration: dry=600, wet=3000
+  float waterLevel = map(adcValue, 600, 3000, 0, 100);
+  
+  return constrain(waterLevel, 0, 100);  // Return 0-100%
+}
+```
+
+### Example 7: Float Switch Water Level
+
+```cpp
+#define WATER_LEVEL_DIGITAL_PIN 25
+
+float readWaterLevel() {
+  int switchState = digitalRead(WATER_LEVEL_DIGITAL_PIN);
+  
+  // HIGH = water present, LOW = no water
+  return (switchState == HIGH) ? 100.0 : 0.0;
 }
 ```
 

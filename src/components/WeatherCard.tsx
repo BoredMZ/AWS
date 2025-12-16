@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import type { WeatherStationData } from '@/types/weather';
 import { getWeatherAlert, getWeatherIcon } from '@/lib/weatherUtils';
-import EventLogger from './EventLogger';
-import EventDisplay from './EventDisplay';
+import WeatherTrendChart, { type WeatherTrendChartRef } from './WeatherTrendChart';
 
 interface WeatherCardProps {
   data: WeatherStationData;
@@ -12,13 +11,7 @@ interface WeatherCardProps {
 }
 
 export default function WeatherCard({ data, language = 'en' }: WeatherCardProps) {
-  const [showEvents, setShowEvents] = useState(false);
-  // Debug extra sensors
-  React.useEffect(() => {
-    if (data.extraSensors && Object.keys(data.extraSensors).length > 0) {
-      console.log(`🎯 ${data.stationName} extraSensors:`, data.extraSensors);
-    }
-  }, [data]);
+  const chartRef = useRef<WeatherTrendChartRef>(null);
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('en-PH', {
@@ -102,7 +95,9 @@ export default function WeatherCard({ data, language = 'en' }: WeatherCardProps)
         {/* Main Metrics */}
         <div className="space-y-3">
           {/* Temperature - Large Display */}
-          <div className="bg-orange-500/10 border border-orange-400/30 p-4 rounded-xl hover:bg-orange-500/20 transition-all">
+          <div 
+            onClick={() => chartRef.current?.showChart('temperature')}
+            className="bg-orange-500/10 border border-orange-400/30 p-4 rounded-xl hover:bg-orange-500/20 transition-all cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs font-semibold text-orange-300">{t.temperature}</span>
@@ -120,7 +115,9 @@ export default function WeatherCard({ data, language = 'en' }: WeatherCardProps)
           </div>
 
           {/* Humidity Progress Bar */}
-          <div className="bg-cyan-500/10 border border-cyan-400/30 p-3 rounded-xl hover:bg-cyan-500/20 transition-all">
+          <div 
+            onClick={() => chartRef.current?.showChart('humidity')}
+            className="bg-cyan-500/10 border border-cyan-400/30 p-3 rounded-xl hover:bg-cyan-500/20 transition-all cursor-pointer">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-cyan-300">{t.humidity}</span>
               <span className="text-sm font-bold text-cyan-200">{data.humidity.toFixed(0)}%</span>
@@ -145,7 +142,9 @@ export default function WeatherCard({ data, language = 'en' }: WeatherCardProps)
               <p className="text-xs text-purple-300/60">hPa</p>
             </div>
 
-            <div className="bg-emerald-500/10 border border-emerald-400/30 p-3 rounded-xl hover:bg-emerald-500/20 transition-all">
+            <div 
+              onClick={() => chartRef.current?.showChart('windSpeed')}
+              className="bg-emerald-500/10 border border-emerald-400/30 p-3 rounded-xl hover:bg-emerald-500/20 transition-all cursor-pointer">
               <p className="text-xs text-emerald-300 font-semibold">Wind</p>
               <p className="text-lg font-bold text-emerald-200 mt-1">{data.windSpeed.toFixed(1)}</p>
               <p className="text-xs text-emerald-300/60">{data.windDirection}</p>
@@ -153,7 +152,9 @@ export default function WeatherCard({ data, language = 'en' }: WeatherCardProps)
           </div>
 
           {/* Rainfall */}
-          <div className={`p-3 rounded-xl border font-bold text-center transition-all ${
+          <div 
+            onClick={() => chartRef.current?.showChart('rainfall')}
+            className={`p-3 rounded-xl border font-bold text-center transition-all cursor-pointer ${
             data.rainfall > 50 ? 'bg-red-500/10 border-red-400/30 text-red-300 hover:bg-red-500/20' :
             data.rainfall > 20 ? 'bg-yellow-500/10 border-yellow-400/30 text-yellow-300 hover:bg-yellow-500/20' :
             'bg-cyan-500/10 border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/20'
@@ -214,21 +215,9 @@ export default function WeatherCard({ data, language = 'en' }: WeatherCardProps)
             </div>
           )}
 
-          {/* Event Logger & Display Toggle */}
-          <div className="mt-4 pt-3 border-t border-cyan-400/20 space-y-3">
-            <button
-              onClick={() => setShowEvents(!showEvents)}
-              className="w-full px-4 py-2 text-sm font-medium bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-            >
-              {showEvents ? '▲ Hide Events' : '▼ Show Events & Logging'}
-            </button>
-
-            {showEvents && (
-              <div className="space-y-3">
-                <EventLogger stationName={data.stationName} />
-                <EventDisplay stationName={data.stationName} limit={8} />
-              </div>
-            )}
+          {/* Weather Trend Chart */}
+          <div className="mt-4 pt-3 border-t border-cyan-400/20">
+            <WeatherTrendChart ref={chartRef} stationName={data.stationName} currentData={data} />
           </div>
         </div>
       </div>

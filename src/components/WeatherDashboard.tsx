@@ -133,15 +133,12 @@ export default function WeatherDashboard({
       timerRef.current = setInterval(() => {
         uploadRandomData();
       }, 5000);
-      
-      console.log('🎲 Random data toggle ON - updating every 5 seconds');
     } else {
       // Clear interval when toggled off
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      console.log('🎲 Random data toggle OFF');
     }
 
     // Cleanup on unmount

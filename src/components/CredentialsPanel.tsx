@@ -24,6 +24,7 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
   const [showComponentCustomization, setShowComponentCustomization] = useState(false);
   const [selectedRainfallComponent, setSelectedRainfallComponent] = useState<string>(COMPONENT_ALTERNATIVES.RAINFALL.default);
   const [selectedWindSpeedComponent, setSelectedWindSpeedComponent] = useState<string>(COMPONENT_ALTERNATIVES.WIND_SPEED.default);
+  const [selectedWaterLevelComponent, setSelectedWaterLevelComponent] = useState<string>(COMPONENT_ALTERNATIVES.WATER_LEVEL.default);
   const [selectedAudience, setSelectedAudience] = useState<AudienceType>('students');
 
   const stationConfig = STATION_CONFIG[selectedStation] || STATION_CONFIG['manila'];
@@ -210,6 +211,7 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
                         sensors: selectedSensors,
                         rainfallComponent: selectedRainfallComponent,
                         windSpeedComponent: selectedWindSpeedComponent,
+                        waterLevelComponent: selectedWaterLevelComponent,
                         audienceTarget: selectedAudience,
                       });
                       setShowCustomization(false);
@@ -270,7 +272,7 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
                     </div>
 
                     {/* Wind Speed Component */}
-                    <div>
+                    <div className="mb-4">
                       <label className="block text-sm font-bold text-gray-700 mb-2">{t.windSpeedComponent}</label>
                       <select
                         value={selectedWindSpeedComponent}
@@ -286,6 +288,27 @@ export default function CredentialsPanel({ language = 'en' }: CredentialsPanelPr
                       {selectedWindSpeedComponent && (
                         <p className="text-xs text-gray-600 mt-1">
                           💡 {COMPONENT_ALTERNATIVES.WIND_SPEED.alternatives.find(c => c.id === selectedWindSpeedComponent)?.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Water Level Component (Optional) */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">💧 Water Level Sensor (Optional)</label>
+                      <select
+                        value={selectedWaterLevelComponent}
+                        onChange={(e) => setSelectedWaterLevelComponent(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg text-gray-800 text-sm"
+                      >
+                        {COMPONENT_ALTERNATIVES.WATER_LEVEL.alternatives.map(comp => (
+                          <option key={comp.id} value={comp.id}>
+                            {comp.name} - PIN: {comp.pins} (Cal: {comp.calibration})
+                          </option>
+                        ))}
+                      </select>
+                      {selectedWaterLevelComponent && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          💡 {COMPONENT_ALTERNATIVES.WATER_LEVEL.alternatives.find(c => c.id === selectedWaterLevelComponent)?.description}
                         </p>
                       )}
                     </div>

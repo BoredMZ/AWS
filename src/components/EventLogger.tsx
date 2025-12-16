@@ -8,8 +8,7 @@ interface EventLoggerProps {
   onEventLogged?: (event: LogEvent) => void;
 }
 
-export default function EventLogger({ stationName, onEventLogged }: EventLoggerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function EventLogger({ stationName }: EventLoggerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [eventType, setEventType] = useState<'manual_observation' | 'maintenance' | 'calibration' | 'alert' | 'other'>('manual_observation');
   const [description, setDescription] = useState('');
@@ -28,50 +27,9 @@ export default function EventLogger({ stationName, onEventLogged }: EventLoggerP
     other: '📌 Other',
   };
 
-  const eventTypeEmojis = {
-    manual_observation: '📝',
-    maintenance: '🔧',
-    calibration: '⚙️',
-    alert: '⚠️',
-    other: '📌',
-  };
 
-  const handleQuickLog = async (type: LogEvent['eventType'], desc: string) => {
-    setIsLoading(true);
-    try {
-      const eventData: EventData = {
-        description: desc,
-        temperature: undefined,
-        humidity: undefined,
-        rainfall: undefined,
-        windSpeed: undefined,
-      };
 
-      const eventId = await logEventToFirebase(stationName, type, eventData);
-      
-      setMessage({
-        type: 'success',
-        text: `✅ ${eventTypeEmojis[type]} Event logged successfully!`,
-      });
-
-      // Reset form
-      setTimeout(() => {
-        setMessage(null);
-      }, 3000);
-
-      console.log(`✅ Quick event logged: ${type} - ${desc}`);
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: '❌ Failed to log event. Please try again.',
-      });
-      console.error('Error logging event:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFullSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!description.trim()) {
@@ -110,7 +68,6 @@ export default function EventLogger({ stationName, onEventLogged }: EventLoggerP
       setNotes('');
 
       setTimeout(() => {
-        setIsOpen(false);
         setMessage(null);
       }, 2000);
     } catch (error) {
@@ -125,61 +82,10 @@ export default function EventLogger({ stationName, onEventLogged }: EventLoggerP
   };
 
   return (
-    <div className="space-y-3">
-      {/* Quick Log Buttons */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-          <span>📊 Quick Log Event</span>
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => handleQuickLog('manual_observation', 'Manual observation recorded')}
-            disabled={isLoading}
-            className="px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded transition-colors font-medium"
-          >
-            📝 Observation
-          </button>
-          
-          <button
-            onClick={() => handleQuickLog('maintenance', 'Maintenance performed')}
-            disabled={isLoading}
-            className="px-3 py-2 text-sm bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white rounded transition-colors font-medium"
-          >
-            🔧 Maintenance
-          </button>
-          
-          <button
-            onClick={() => handleQuickLog('calibration', 'Sensor calibration completed')}
-            disabled={isLoading}
-            className="px-3 py-2 text-sm bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded transition-colors font-medium"
-          >
-            ⚙️ Calibration
-          </button>
-          
-          <button
-            onClick={() => handleQuickLog('alert', 'System alert triggered')}
-            disabled={isLoading}
-            className="px-3 py-2 text-sm bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded transition-colors font-medium"
-          >
-            ⚠️ Alert
-          </button>
-        </div>
-      </div>
-
-      {/* Full Form Toggle */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-2 text-sm font-medium bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md"
-      >
-        {isOpen ? '▲ Hide Detailed Form' : '▼ Detailed Event Log'}
-      </button>
-
-      {/* Detailed Form */}
-      {isOpen && (
-        <form onSubmit={handleFullSubmit} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm space-y-4">
-          {/* Event Type */}
-          <div>
+    <div>
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm space-y-4">
+        {/* Event Type */}
+        <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Event Type
             </label>
@@ -303,7 +209,6 @@ export default function EventLogger({ stationName, onEventLogged }: EventLoggerP
             {isLoading ? '⏳ Logging...' : '✅ Log Event'}
           </button>
         </form>
-      )}
     </div>
   );
 }
